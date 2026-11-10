@@ -53,26 +53,74 @@ export const SacredBowTrigger: React.FC<SacredBowTriggerProps> = ({
     }
   }, [isPulling, dragY, maxPull, onTensionChange, onAwaken]);
 
+  const handlePointerCancel = useCallback(() => {
+    if (!isPulling) return;
+    setIsPulling(false);
+    setDragY(0);
+    onTensionChange(0);
+    soundEngine.updateBowTension(0);
+  }, [isPulling, onTensionChange]);
+
   useEffect(() => {
     const handleGlobalPointerUp = () => {
       if (isPulling) {
         handleRelease();
       }
     };
+    const handleGlobalPointerCancel = () => {
+      if (isPulling) {
+        handlePointerCancel();
+      }
+    };
     window.addEventListener('pointerup', handleGlobalPointerUp);
-    return () => window.removeEventListener('pointerup', handleGlobalPointerUp);
-  }, [isPulling, handleRelease]);
+    window.addEventListener('pointercancel', handleGlobalPointerCancel);
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('pointercancel', handleGlobalPointerCancel);
+    };
+  }, [isPulling, handleRelease, handlePointerCancel]);
+
+  // Keyboard navigation support (F10)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const newDrag = Math.min(dragY + 25, maxPull);
+      setDragY(newDrag);
+      const tension = newDrag / maxPull;
+      soundEngine.startCosmicDrone();
+      onTensionChange(tension);
+      soundEngine.updateBowTension(tension);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const newDrag = Math.max(dragY - 25, 0);
+      setDragY(newDrag);
+      const tension = newDrag / maxPull;
+      onTensionChange(tension);
+      soundEngine.updateBowTension(tension);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const tension = dragY / maxPull;
+      if (tension >= 0.75) {
+        soundEngine.playBowRelease();
+        onTensionChange(1.0);
+        onAwaken();
+      } else {
+        // Automatically animate draw & release for keyboard accessibility
+        setDragY(maxPull);
+        onTensionChange(1.0);
+        soundEngine.updateBowTension(1.0);
+        setTimeout(() => {
+          soundEngine.playBowRelease();
+          onAwaken();
+        }, 300);
+      }
+    }
+  };
 
   const tensionPercent = Math.round((dragY / maxPull) * 100);
 
-  // SVG coordinate calculations:
-  // ViewBox is 0 0 380 240. Endpoints are at (20, 50) and (360, 50).
-  // pullY is the lowest point of the curve in SVG units.
-  // When dragY = 0, pullY = 50. When dragY = 170, pullY = 50 + 170 = 220.
   const pullY = 50 + dragY;
-  // For quadratic curve B(t) with y0 = 50, y1 = cy, y2 = 50:
-  // Lowest point at t = 0.5 is (50 + 2*cy + 50)/4 = (100 + 2*cy)/4 = 25 + cy/2.
-  // Setting pullY = 25 + cy/2 => cy = 2 * pullY - 50 = 50 + 2 * dragY.
   const controlY = 50 + 2 * dragY;
 
   return (
@@ -93,9 +141,17 @@ export const SacredBowTrigger: React.FC<SacredBowTriggerProps> = ({
 
       {/* Interactive String Area */}
       <div
-        className="relative w-80 sm:w-96 h-64 flex items-start justify-center cursor-grab active:cursor-grabbing touch-none"
+        role="slider"
+        aria-label="Primordial chord of time. Press Arrow Down to increase tension, then Enter to release."
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={tensionPercent}
+        tabIndex={disabled ? -1 : 0}
+        onKeyDown={handleKeyDown}
+        className="relative w-80 sm:w-96 h-64 flex items-start justify-center cursor-grab active:cursor-grabbing touch-none focus:outline-none focus-visible:ring-1 focus-visible:ring-gold-antique/60 rounded-md"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
+        onPointerCancel={handlePointerCancel}
       >
         <svg
           className="w-full h-full overflow-visible pointer-events-none"
@@ -181,14 +237,14 @@ export const SacredBowTrigger: React.FC<SacredBowTriggerProps> = ({
         </svg>
       </div>
 
-      {/* Threshold Instruction Indicator - fades smoothly when dragging to prevent overlap */}
+      {/* Threshold Instruction Indicator */}
       <div 
         className={`mt-4 flex items-center space-x-2 text-[11px] text-parchment-muted font-sans transition-opacity duration-200 ${
           dragY > 0 ? 'opacity-0' : 'opacity-100'
         }`}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-gold-antique" />
-        <span>Click & drag downward, then release</span>
+        <span>Click & drag downward, or use Arrow Down & Enter</span>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CosmicVoidCanvas } from './CosmicVoidCanvas';
 import { SacredBowTrigger } from './SacredBowTrigger';
 import { ScripturalDrawer } from './ScripturalDrawer';
@@ -17,14 +17,11 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
   const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [narrationIndex, setNarrationIndex] = useState<number>(0);
+  const [isTextTransitioning, setIsTextTransitioning] = useState<boolean>(false);
+  const [isExiting, setIsExiting] = useState<boolean>(false);
 
-  useEffect(() => {
-    const unsub = soundEngine.subscribe((muted) => setIsMuted(muted));
-    return () => {
-      unsub();
-      soundEngine.stopNarration();
-    };
-  }, []);
+  const awakenTimerRef = useRef<number | null>(null);
+  const exitTimerRef = useRef<number | null>(null);
 
   const narrationLines = [
     {
@@ -41,6 +38,16 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
     },
   ];
 
+  useEffect(() => {
+    const unsub = soundEngine.subscribe((muted) => setIsMuted(muted));
+    return () => {
+      unsub();
+      soundEngine.stopNarration();
+      if (awakenTimerRef.current) clearTimeout(awakenTimerRef.current);
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    };
+  }, []);
+
   const handleTensionChange = (tension: number) => {
     if (stage === 'void') {
       setWarpIntensity(tension * 0.3);
@@ -51,12 +58,13 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
     setStage('warping');
     setWarpIntensity(1.0);
 
-    // Speak initial narration line cleanly in English
     soundEngine.speakNarration(narrationLines[0].text);
 
-    setTimeout(() => {
+    if (awakenTimerRef.current) clearTimeout(awakenTimerRef.current);
+    awakenTimerRef.current = window.setTimeout(() => {
       setStage('awakened');
-      setWarpIntensity(0.12);
+      // Calm target: 0.05 gives a serene, slow starlight drift
+      setWarpIntensity(0.05);
     }, 2400);
   };
 
@@ -67,24 +75,33 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
 
   const handleNextNarration = () => {
     if (narrationIndex < narrationLines.length - 1) {
-      const nextIdx = narrationIndex + 1;
-      setNarrationIndex(nextIdx);
-      soundEngine.speakNarration(narrationLines[nextIdx].text);
+      setIsTextTransitioning(true);
+      setTimeout(() => {
+        const nextIdx = narrationIndex + 1;
+        setNarrationIndex(nextIdx);
+        setIsTextTransitioning(false);
+        soundEngine.speakNarration(narrationLines[nextIdx].text);
+      }, 350);
     } else if (onEnterUniverse) {
       soundEngine.stopNarration();
-      onEnterUniverse();
+      setIsExiting(true);
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = window.setTimeout(() => {
+        onEnterUniverse();
+      }, 600);
     }
   };
 
   const handleReset = () => {
     soundEngine.stopNarration();
+    if (awakenTimerRef.current) clearTimeout(awakenTimerRef.current);
     setStage('void');
     setWarpIntensity(0);
     setNarrationIndex(0);
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-cosmos-void text-parchment select-none">
+    <div className={`relative w-screen h-dvh overflow-hidden bg-cosmos-void text-parchment select-none transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
       
       {/* 1. Deep 3D Three.js Star Tunnel & Warp Canvas */}
       <CosmicVoidCanvas warpIntensity={warpIntensity} />
@@ -127,7 +144,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
 
       {/* 3. Stage 1: The Cosmic Threshold & Interactive Bowstring */}
       {stage === 'void' && (
-        <div className="relative z-20 h-[calc(100vh-160px)] flex flex-col items-center justify-center px-4">
+        <div className="relative z-20 h-[calc(100dvh-160px)] flex flex-col items-center justify-center px-4 animate-fade-in">
           
           <div className="text-center max-w-xl mx-auto mb-6">
             <span className="inline-block px-3 py-1 rounded-full border border-gold-antique/25 bg-cosmos-surface/80 text-[10px] font-sans tracking-[0.25em] text-gold-light uppercase mb-4">
@@ -151,7 +168,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
 
       {/* 4. Stage 2: Hyperspace Warp Transition Overlay */}
       {stage === 'warping' && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none animate-fade-in">
           <div className="w-48 h-48 rounded-full bg-gold-radiant/20 blur-3xl animate-ping" />
           <span className="font-cinzel text-lg sm:text-2xl text-sacred-gold tracking-[0.4em] uppercase animate-pulse">
             Crossing Time...
@@ -161,7 +178,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
 
       {/* 5. Stage 3: The Awakened Cosmic Narrative Experience */}
       {stage === 'awakened' && (
-        <div className="relative z-20 h-[calc(100vh-160px)] flex flex-col items-center justify-center px-4 text-center max-w-3xl mx-auto">
+        <div className="relative z-20 h-[calc(100dvh-160px)] flex flex-col items-center justify-center px-4 text-center max-w-3xl mx-auto">
           
           <div className="p-8 sm:p-12 rounded-sm bg-cosmos-midnight/60 border border-gold-antique/30 backdrop-blur-xl shadow-gold-glow animate-fade-in">
             
@@ -170,15 +187,19 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
               <span>Cosmic Prologue • Part {narrationIndex + 1} of {narrationLines.length}</span>
             </span>
 
-            {/* Narrated Text */}
-            <p className="font-cinzel text-xl sm:text-3xl text-gold-radiant font-bold leading-relaxed mb-4">
-              "{narrationLines[narrationIndex].text}"
-            </p>
+            {/* Narrated Text with crossfade & aria-live for screen readers */}
+            <div 
+              aria-live="polite" 
+              className={`transition-all duration-300 ${isTextTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+            >
+              <p className="font-cinzel text-xl sm:text-3xl text-gold-radiant font-bold leading-relaxed mb-4">
+                "{narrationLines[narrationIndex].text}"
+              </p>
 
-            {/* Subtext explanation in clear English */}
-            <p className="font-cormorant italic text-sm sm:text-base text-parchment-muted mb-8">
-              {narrationLines[narrationIndex].subtext}
-            </p>
+              <p className="font-cormorant italic text-sm sm:text-base text-parchment-muted mb-8">
+                {narrationLines[narrationIndex].subtext}
+              </p>
+            </div>
 
             {/* Interactive Actions */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
