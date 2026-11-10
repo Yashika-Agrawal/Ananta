@@ -19,7 +19,11 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
   const [narrationIndex, setNarrationIndex] = useState<number>(0);
 
   useEffect(() => {
-    return soundEngine.subscribe((muted) => setIsMuted(muted));
+    const unsub = soundEngine.subscribe((muted) => setIsMuted(muted));
+    return () => {
+      unsub();
+      soundEngine.stopNarration();
+    };
   }, []);
 
   const narrationLines = [
@@ -67,6 +71,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
       setNarrationIndex(nextIdx);
       soundEngine.speakNarration(narrationLines[nextIdx].text);
     } else if (onEnterUniverse) {
+      soundEngine.stopNarration();
       onEnterUniverse();
     }
   };
