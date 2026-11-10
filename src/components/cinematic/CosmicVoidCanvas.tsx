@@ -140,11 +140,18 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
     // 6. Animation Loop
     let animationId: number;
     let clock = new THREE.Clock();
+    let smoothedWarp = warpRef.current;
 
     const animate = () => {
       animationId = requestAnimationFrame(animate);
-      clock.getDelta();
-      const currentWarp = warpRef.current;
+      const rawDelta = clock.getDelta();
+      const delta = Math.min(rawDelta, 0.05); // clamp delta against tab switch jumps
+      const targetWarp = warpRef.current;
+
+      // Frame-rate independent exponential smoothing for warp
+      // Faster attack on release (~10.0), smoother release when settling (~4.0)
+      const dampRate = targetWarp > smoothedWarp ? 10.0 : 4.0;
+      smoothedWarp += (targetWarp - smoothedWarp) * (1 - Math.exp(-dampRate * delta));
 
       // Mouse smoothing
       targetX += (mouseX - targetX) * 0.04;
@@ -152,26 +159,29 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
       camera.position.x = targetX * 0.3;
       camera.position.y = -targetY * 0.3;
 
-      // Star tunnel flow: Base calm drift vs violent hyperspace warp
+      // Continuous, smooth star speed:
+      // at warp 0 => 48 units/sec (~0.8 at 60fps)
+      // at warp 1 => 48 + 11652 = 11,700 units/sec (~195 at 60fps)
+      const speedPerSecond = 48 + Math.pow(smoothedWarp, 1.8) * 11652;
+      const stepSpeed = speedPerSecond * delta;
+
       const positions = starGeometry.attributes.position.array as Float32Array;
-      const speed = currentWarp > 0.05 ? 15 + currentWarp * 180 : 0.8;
 
       for (let i = 0; i < starCount; i++) {
         const i3 = i * 3;
-        positions[i3 + 2] += speed;
+        positions[i3 + 2] += stepSpeed;
 
-        // Warp stretching logic: stretch stars along z-axis if warping
         if (positions[i3 + 2] > 900) {
           positions[i3 + 2] = -1200;
         }
       }
       starGeometry.attributes.position.needsUpdate = true;
 
-      // Rotate sacred geometry rings
-      ringGroup.rotation.z += 0.0015 + currentWarp * 0.02;
+      // Delta-scaled ring rotation
+      ringGroup.rotation.z += (0.09 + smoothedWarp * 1.2) * delta;
 
-      // Camera FOV expands on high warp (cinematic hyperspace stretch)
-      camera.fov = 60 + currentWarp * 35;
+      // Camera FOV smoothly driven by smoothed warp (no instant snapping)
+      camera.fov = 60 + smoothedWarp * 35;
       camera.updateProjectionMatrix();
 
       renderer.render(scene, camera);
