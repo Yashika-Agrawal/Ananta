@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #030509;
+    color: #eae4d3;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Cinzel', serif;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #070a13;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1f2e4d;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #d4af37;
+  }
+}
+
+/* Sacred typography glow utility */
+.text-sacred-gold {
+  background: linear-gradient(135deg, #fdf3d8 0%, #d4af37 55%, #b58d28 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-sacred-bronze {
+  background: linear-gradient(135deg, #f5e4b3 0%, #c89d7c 50%, #9b6b43 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Subtle gold metallic border */
+.border-gold-filigree {
+  border-color: rgba(212, 175, 55, 0.22);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.border-gold-filigree:hover {
+  border-color: rgba(212, 175, 55, 0.45);
+  box-shadow: 0 0 20px -5px rgba(212, 175, 55, 0.15);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
