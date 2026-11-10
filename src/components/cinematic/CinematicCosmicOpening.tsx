@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CosmicVoidCanvas } from './CosmicVoidCanvas';
 import { SacredBowTrigger } from './SacredBowTrigger';
 import { ScripturalDrawer } from './ScripturalDrawer';
@@ -14,9 +14,13 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
 }) => {
   const [stage, setStage] = useState<'void' | 'warping' | 'awakened'>('void');
   const [warpIntensity, setWarpIntensity] = useState<number>(0);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [narrationIndex, setNarrationIndex] = useState<number>(0);
+
+  useEffect(() => {
+    return soundEngine.subscribe((muted) => setIsMuted(muted));
+  }, []);
 
   const narrationLines = [
     {

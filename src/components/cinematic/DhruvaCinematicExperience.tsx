@@ -25,7 +25,11 @@ export const DhruvaCinematicExperience: React.FC<DhruvaCinematicExperienceProps>
 }) => {
   const [currentSceneIndex, setCurrentSceneIndex] = useState<number>(0);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
+
+  useEffect(() => {
+    return soundEngine.subscribe((muted) => setIsMuted(muted));
+  }, []);
 
   // Scene 2 Interaction: Mist clearing
   const [mistOpacity, setMistOpacity] = useState<number>(1.0);

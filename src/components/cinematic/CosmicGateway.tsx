@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CosmicGatewayCanvas } from './CosmicGatewayCanvas';
 import { soundEngine } from '../../services/soundEngine';
 import { 
@@ -37,7 +37,11 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(0); // Default to Katha
   const [transitioningTo, setTransitioningTo] = useState<GatewayId | null>(null);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
+
+  useEffect(() => {
+    return soundEngine.subscribe((muted) => setIsMuted(muted));
+  }, []);
 
   const gateways: Gateway[] = [
     {

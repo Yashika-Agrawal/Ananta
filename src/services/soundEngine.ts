@@ -3,12 +3,16 @@
  * Eliminates harsh constant electronic tones/beeps.
  * Produces warm, gentle temple bell chimes, soft wind/rain atmosphere, and smooth string pluck.
  */
+
+const DEFAULT_MASTER_GAIN = 0.5;
+
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
   private masterGain: GainNode | null = null;
   private ambientNoiseGain: GainNode | null = null;
   private ambientNoiseSource: AudioBufferSourceNode | null = null;
+  private listeners: Set<(muted: boolean) => void> = new Set();
 
   private initContext() {
     if (!this.ctx) {
@@ -17,7 +21,8 @@ class SoundEngine {
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.ctx = new AudioContextClass();
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+      // Honor mute state upon initialization
+      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : DEFAULT_MASTER_GAIN, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') {
@@ -25,18 +30,34 @@ class SoundEngine {
     }
   }
 
+  public getMuted(): boolean {
+    return this.isMuted;
+  }
+
+  public subscribe(listener: (muted: boolean) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notify() {
+    this.listeners.forEach((listener) => listener(this.isMuted));
+  }
+
   public unmute() {
     this.isMuted = false;
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setTargetAtTime(0.6, this.ctx.currentTime, 0.1);
+      this.masterGain.gain.setTargetAtTime(DEFAULT_MASTER_GAIN, this.ctx.currentTime, 0.05);
     }
+    this.notify();
   }
 
   public mute() {
     this.isMuted = true;
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+      this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
     }
+    this.stopNarration();
+    this.notify();
   }
 
   public toggleMute(): boolean {
@@ -56,7 +77,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.masterGain) return;
 
-    // Create 4 seconds of gentle pink noise buffer for warm breeze/space wind
+    // Create 3 seconds of gentle pink noise buffer for warm breeze/space wind
     const bufferSize = this.ctx.sampleRate * 3;
     const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const output = noiseBuffer.getChannelData(0);
@@ -89,6 +110,26 @@ class SoundEngine {
 
     noise.start();
     this.ambientNoiseSource = noise;
+  }
+
+  /**
+   * Stop pink noise drone cleanly with optional fade
+   */
+  public stopCosmicDrone(fadeSeconds = 1.0) {
+    if (!this.ambientNoiseGain || !this.ambientNoiseSource || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.ambientNoiseGain.gain.linearRampToValueAtTime(0.0001, now + fadeSeconds);
+    const source = this.ambientNoiseSource;
+    setTimeout(() => {
+      try {
+        source.stop();
+        source.disconnect();
+      } catch {
+        // already stopped
+      }
+    }, fadeSeconds * 1000);
+    this.ambientNoiseSource = null;
+    this.ambientNoiseGain = null;
   }
 
   /**
@@ -149,23 +190,33 @@ class SoundEngine {
     utterance.rate = 0.85; // Calm, thoughtful pace
     utterance.pitch = 0.95; // Natural tone
 
-    const voices = window.speechSynthesis.getVoices();
-    const naturalVoice = voices.find(
-      (v) =>
-        (v.name.includes('Natural') ||
-          v.name.includes('Daniel') ||
-          v.name.includes('Google UK English Male') ||
-          v.name.includes('Samantha') ||
-          v.name.includes('Arthur')) &&
-        v.lang.startsWith('en')
-    );
-    if (naturalVoice) utterance.voice = naturalVoice;
+    const chooseVoiceAndSpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const naturalVoice = voices.find(
+        (v) =>
+          (v.name.includes('Natural') ||
+            v.name.includes('Daniel') ||
+            v.name.includes('Google UK English Male') ||
+            v.name.includes('Samantha') ||
+            v.name.includes('Arthur')) &&
+          v.lang.startsWith('en')
+      );
+      if (naturalVoice) utterance.voice = naturalVoice;
 
-    if (onEnd) {
-      utterance.onend = onEnd;
+      if (onEnd) {
+        utterance.onend = onEnd;
+      }
+      window.speechSynthesis.speak(utterance);
+    };
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        chooseVoiceAndSpeak();
+      };
+    } else {
+      chooseVoiceAndSpeak();
     }
-
-    window.speechSynthesis.speak(utterance);
   }
 
   public stopNarration() {
