@@ -202,16 +202,20 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
         </div>
       )}
 
-      {/* 6. Scriptural Evidence Drawer (Clear English translation & context) */}
+      {/* 6. Scriptural Evidence Drawer */}
       <ScripturalDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        title="The Hymn of Creation"
-        devanagariTitle="Rigveda, Mandala 10, Hymn 129"
-        sanskritVerse="There was neither non-existence nor existence then; there was neither the realm of space, nor the sky beyond it. What was enclosed, and where, or in whose protection? Was there water, unfathomed and profound?"
-        sourceText="Rigveda Samhita 10.129.1"
-        traditionalPurport="Before creation, the universe rested in total silence and unmanifest potential. Supreme consciousness alone existed in quiet stillness before time and form began."
-        philosophicalContext="In traditional Hindu cosmology, the universe moves in eternal cycles of creation (Srishti), preservation (Sthiti), and dissolution (Pralaya). This opening reflects that timeless origin."
+        title="Nasadiya Sukta — The Hymn of Creation"
+        devanagariTitle="नासदीय सूक्तम् — ऋग्वेद मण्डल १०, सूक्त १२९"
+        sanskritVerse={`नासदासीन्नो सदासीत्तदानीं नासीद्रजो नो व्योमा परो यत् ।
+किमावरीवः कुह कस्य शर्मन्नम्भः किमासीद्गहनं गभीरम् ॥ १ ॥
+
+nāsad āsīn no sad āsīt tadānīṃ nāsīd rajo no vyomā paro yat |
+kim āvarīvaḥ kuha kasya śarmann ambhaḥ kim āsīd gahanaṃ gabhīram || 1 ||`}
+        sourceText="Rigveda Samhita, Mandala 10, Sukta 129, Verse 1"
+        traditionalPurport="There was neither non-existence nor existence then; there was neither the realm of space, nor the sky beyond it. What was enclosed, and where, or in whose protection? Supreme consciousness alone breathed calmly by its own intrinsic power before creation began."
+        philosophicalContext="In traditional Vedic cosmology, the unmanifested state (Pralaya) precedes cosmic manifestation (Srishti). This is not a void of nothingness, but the quiet stillness of Brahman holding infinite potential."
       />
     </div>
   );

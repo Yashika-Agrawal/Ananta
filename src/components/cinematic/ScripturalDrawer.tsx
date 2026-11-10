@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, BookOpen, ExternalLink } from 'lucide-react';
+import { X, BookOpen } from 'lucide-react';
 
 interface ScripturalDrawerProps {
   isOpen: boolean;
@@ -58,7 +58,7 @@ export const ScripturalDrawer: React.FC<ScripturalDrawerProps> = ({
           {/* Canonical Sanskrit Shloka Block */}
           <div className="rounded-sm bg-cosmos-surface border border-gold-antique/30 p-5 mb-6 shadow-gold-subtle">
             <span className="text-[10px] font-mono tracking-wider text-gold-antique uppercase block mb-2">
-              Original Sanskrit Verses
+              Canonical Verse (Devanagari & Transliteration)
             </span>
             <blockquote className="font-rozha text-lg sm:text-xl text-gold-radiant leading-relaxed whitespace-pre-line mb-3">
               {sanskritVerse}
@@ -93,9 +93,8 @@ export const ScripturalDrawer: React.FC<ScripturalDrawerProps> = ({
         {/* Bottom Attribution Notice */}
         <div className="pt-6 border-t border-gold-antique/15 text-[11px] text-parchment-muted flex items-center justify-between">
           <span>Preserving canonical integrity</span>
-          <span className="text-gold-antique flex items-center gap-1 cursor-pointer hover:underline">
-            <span>Indexed in Ananta</span>
-            <ExternalLink className="w-3 h-3" />
+          <span className="text-gold-antique font-sans">
+            Indexed in Ananta Granth
           </span>
         </div>
       </div>
