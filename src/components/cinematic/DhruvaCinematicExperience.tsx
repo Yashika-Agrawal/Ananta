@@ -99,7 +99,7 @@ export const DhruvaCinematicExperience: React.FC<DhruvaCinematicExperienceProps>
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-cosmos-void text-parchment select-none">
+    <div className="relative w-screen h-dvh overflow-hidden bg-cosmos-void text-parchment select-none">
       
       {/* 1. Dynamic 3D Environment (Forest fireflies, Tapasya fire, or Pole Star sky) */}
       <Scene3DEnvironment

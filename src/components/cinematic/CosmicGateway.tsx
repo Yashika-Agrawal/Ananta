@@ -110,7 +110,7 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
   const currentGateway = hoveredIndex !== null ? gateways[hoveredIndex] : gateways[0];
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-cosmos-void text-parchment select-none">
+    <div className="relative w-screen h-dvh overflow-hidden bg-cosmos-void text-parchment select-none">
       
       {/* 1. Fully visible 3D Cosmic Arches & Star Vault */}
       <CosmicGatewayCanvas
