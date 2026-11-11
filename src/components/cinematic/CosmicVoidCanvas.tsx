@@ -28,6 +28,14 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
     const container = mountRef.current;
     if (!container) return;
 
+    let renderer: THREE.WebGLRenderer | null = null;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    } catch (e) {
+      console.warn('WebGL initialization failed in CosmicVoidCanvas, falling back.', e);
+      return;
+    }
+
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x030509, 0.0012);
@@ -40,17 +48,18 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
     );
     camera.position.z = 800;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // Mobile performance cap: cap pixel ratio at 1.5 for performance (F14)
+    const isMobile = window.innerWidth < 768;
+    const maxDPR = isMobile ? 1.5 : 2;
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxDPR));
     container.appendChild(renderer.domElement);
 
-    // 2. Deep Cosmic Star Tunnel (12,000 particle stars)
-    const starCount = 10000;
+    // 2. Cosmic Star Tunnel (capped to 6,000 on mobile, 10,000 on desktop)
+    const starCount = isMobile ? 6000 : 10000;
     const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
     const starColors = new Float32Array(starCount * 3);
-    const starOriginalZ = new Float32Array(starCount);
 
     const goldColor = new THREE.Color(0xd4af37);
     const lightGold = new THREE.Color(0xfdf3d8);
@@ -58,16 +67,13 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
 
     for (let i = 0; i < starCount; i++) {
       const i3 = i * 3;
-      // Cylinder / tunnel distribution
       const radius = THREE.MathUtils.randFloat(30, 900);
       const theta = THREE.MathUtils.randFloat(0, Math.PI * 2);
 
       starPositions[i3] = Math.cos(theta) * radius;
       starPositions[i3 + 1] = Math.sin(theta) * radius;
       starPositions[i3 + 2] = THREE.MathUtils.randFloat(-1500, 1000);
-      starOriginalZ[i] = starPositions[i3 + 2];
 
-      // Mix colors: mostly antique gold and subtle starlight
       const col = Math.random() > 0.6 ? lightGold : Math.random() > 0.3 ? goldColor : deepBlue;
       starColors[i3] = col.r;
       starColors[i3 + 1] = col.g;
@@ -105,11 +111,15 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
     const starSystem = new THREE.Points(starGeometry, starMaterial);
     scene.add(starSystem);
 
-    // 3. Sacred Golden Sri Yantra Rings in Depth
+    // 3. Sacred Golden Sri Yantra Rings
     const ringGroup = new THREE.Group();
     const ringCount = 5;
+    const ringGeometries: THREE.BufferGeometry[] = [];
+    const ringMaterials: THREE.Material[] = [];
+
     for (let r = 0; r < ringCount; r++) {
       const ringGeo = new THREE.RingGeometry(180 + r * 60, 181.5 + r * 60, 64);
+      ringGeometries.push(ringGeo);
       const ringMat = new THREE.MeshBasicMaterial({
         color: 0xd4af37,
         side: THREE.DoubleSide,
@@ -117,6 +127,7 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
         opacity: 0.12 - r * 0.015,
         blending: THREE.AdditiveBlending,
       });
+      ringMaterials.push(ringMat);
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.position.z = -200 - r * 150;
       ringGroup.add(ring);
@@ -137,11 +148,19 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
 
     // 5. Window Resize Handler
     const handleResize = () => {
+      if (!renderer) return;
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
     window.addEventListener('resize', handleResize);
+
+    // Visibility change handler: pause loop when tab is hidden (F13)
+    let isTabVisible = true;
+    const handleVisibilityChange = () => {
+      isTabVisible = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // 6. Animation Loop
     let animationId: number;
@@ -150,27 +169,23 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
 
     const animate = () => {
       animationId = requestAnimationFrame(animate);
+      if (!isTabVisible || !renderer) return;
+
       const rawDelta = clock.getDelta();
-      const delta = Math.min(rawDelta, 0.05); // clamp delta against tab switch jumps
+      const delta = Math.min(rawDelta, 0.05);
       const targetWarp = warpRef.current;
 
-      // Frame-rate independent exponential smoothing for warp
-      // Faster attack on release (~10.0), smoother release when settling (~4.0)
       const dampRate = targetWarp > smoothedWarp ? 10.0 : 4.0;
       smoothedWarp += (targetWarp - smoothedWarp) * (1 - Math.exp(-dampRate * delta));
 
-      // Mouse smoothing
       targetX += (mouseX - targetX) * 0.04;
       targetY += (mouseY - targetY) * 0.04;
       camera.position.x = targetX * 0.3;
       camera.position.y = -targetY * 0.3;
 
-      // Continuous, smooth star speed:
-      // at warp 0 => 48 units/sec (~0.8 at 60fps)
-      // at warp 1 => 48 + 11652 = 11,700 units/sec (~195 at 60fps)
       const isReduced = reducedMotionRef.current;
       const speedPerSecond = isReduced
-        ? 24 + smoothedWarp * 50 // Gentle cap for reduced motion
+        ? 24 + smoothedWarp * 50
         : 48 + Math.pow(smoothedWarp, 1.8) * 11652;
       const stepSpeed = speedPerSecond * delta;
 
@@ -186,10 +201,8 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
       }
       starGeometry.attributes.position.needsUpdate = true;
 
-      // Delta-scaled ring rotation (disabled or very subtle in reduced motion)
       ringGroup.rotation.z += (isReduced ? 0.02 : 0.09 + smoothedWarp * 1.2) * delta;
 
-      // Camera FOV smoothly driven by smoothed warp (no FOV change in reduced motion)
       camera.fov = isReduced ? 60 : 60 + smoothedWarp * 35;
       camera.updateProjectionMatrix();
 
@@ -201,13 +214,23 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cancelAnimationFrame(animationId);
-      if (container && renderer.domElement) {
-        container.removeChild(renderer.domElement);
-      }
+
+      // Complete resource disposal (F13)
       starGeometry.dispose();
       starMaterial.dispose();
-      renderer.dispose();
+      starTexture.dispose();
+      ringGeometries.forEach((g) => g.dispose());
+      ringMaterials.forEach((m) => m.dispose());
+
+      if (renderer) {
+        if (container && renderer.domElement && container.contains(renderer.domElement)) {
+          container.removeChild(renderer.domElement);
+        }
+        renderer.forceContextLoss();
+        renderer.dispose();
+      }
     };
   }, []);
 

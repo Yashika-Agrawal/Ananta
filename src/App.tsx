@@ -6,6 +6,7 @@ import { Navbar, ActiveSection } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 import { HomeView } from './views/HomeView';
 import { PlaceholderView } from './views/PlaceholderView';
+import { WebGLErrorBoundary } from './components/common/WebGLErrorBoundary';
 
 export const App: React.FC = () => {
   // Check OS reduced motion preference initially
@@ -44,21 +45,25 @@ export const App: React.FC = () => {
   // 1. Screen 1: The Primordial Prologue (Chord Pull & Audio Awakening)
   if (experienceMode === 'cinematic-prologue') {
     return (
-      <CinematicCosmicOpening
-        reducedMotion={reducedMotion}
-        onEnterUniverse={() => setExperienceMode('cosmic-gateway')}
-      />
+      <WebGLErrorBoundary>
+        <CinematicCosmicOpening
+          reducedMotion={reducedMotion}
+          onEnterUniverse={() => setExperienceMode('cosmic-gateway')}
+        />
+      </WebGLErrorBoundary>
     );
   }
 
   // 2. Screen 2: The Cosmic Gateway (Five 3D Portals in Arc Space)
   if (experienceMode === 'cosmic-gateway') {
     return (
-      <CosmicGateway
-        reducedMotion={reducedMotion}
-        onSelectGateway={handleSelectGateway}
-        onReturnToPrologue={() => setExperienceMode('cinematic-prologue')}
-      />
+      <WebGLErrorBoundary>
+        <CosmicGateway
+          reducedMotion={reducedMotion}
+          onSelectGateway={handleSelectGateway}
+          onReturnToPrologue={() => setExperienceMode('cinematic-prologue')}
+        />
+      </WebGLErrorBoundary>
     );
   }
 

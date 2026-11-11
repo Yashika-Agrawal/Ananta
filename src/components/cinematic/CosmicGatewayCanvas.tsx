@@ -33,6 +33,14 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
     const container = mountRef.current;
     if (!container) return;
 
+    let renderer: THREE.WebGLRenderer | null = null;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    } catch (e) {
+      console.warn('WebGL initialization failed in CosmicGatewayCanvas, falling back.', e);
+      return;
+    }
+
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x040711, 0.0009);
@@ -45,13 +53,14 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
     );
     camera.position.set(0, 70, 620);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const isMobile = window.innerWidth < 768;
+    const maxDPR = isMobile ? 1.5 : 2;
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxDPR));
     container.appendChild(renderer.domElement);
 
     // 2. Cosmic Starfield & Nebula
-    const starCount = 6000;
+    const starCount = isMobile ? 3500 : 6000;
     const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
     const starColors = new Float32Array(starCount * 3);
@@ -89,10 +98,14 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
     const starPoints = new THREE.Points(starGeometry, starMaterial);
     scene.add(starPoints);
 
-    // 3. Ground Kaalachakra Disc (Subtle, far beneath)
+    // 3. Ground Kaalachakra Disc
     const mandalaGroup = new THREE.Group();
+    const mandalaGeometries: THREE.BufferGeometry[] = [];
+    const mandalaMaterials: THREE.Material[] = [];
+
     [250, 380, 520].forEach((r, idx) => {
       const ringGeo = new THREE.RingGeometry(r, r + 2.5, 64);
+      mandalaGeometries.push(ringGeo);
       const ringMat = new THREE.MeshBasicMaterial({
         color: 0xd4af37,
         side: THREE.DoubleSide,
@@ -100,6 +113,7 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
         opacity: 0.18 - idx * 0.04,
         blending: THREE.AdditiveBlending,
       });
+      mandalaMaterials.push(ringMat);
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
       ring.position.y = -190;
@@ -108,30 +122,31 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
     scene.add(mandalaGroup);
 
     // 4. Five Grand Cosmic 3D Gateway Portals
-    // Spread in a wide majestic arc elevated above the ground
     const gatewayThemes = [
-      { color: 0xf59e0b, emissive: 0xd97706, aura: 0xfef3c7 }, // Katha (Radiant Gold)
-      { color: 0x0ea5e9, emissive: 0x0284c7, aura: 0xe0f2fe }, // Brahmanda (Cosmic Azure)
-      { color: 0xa855f7, emissive: 0x9333ea, aura: 0xf3e8ff }, // Tattva (Mystic Violet)
-      { color: 0xf97316, emissive: 0xea580c, aura: 0xffedd5 }, // Charitra (Sun Terracotta)
-      { color: 0x10b981, emissive: 0x059669, aura: 0xd1fae5 }, // My Granth (Emerald Sage)
+      { color: 0xf59e0b, emissive: 0xd97706, aura: 0xfef3c7 },
+      { color: 0x0ea5e9, emissive: 0x0284c7, aura: 0xe0f2fe },
+      { color: 0xa855f7, emissive: 0x9333ea, aura: 0xf3e8ff },
+      { color: 0xf97316, emissive: 0xea580c, aura: 0xffedd5 },
+      { color: 0x10b981, emissive: 0x059669, aura: 0xd1fae5 },
     ];
 
     const portalGroups: THREE.Group[] = [];
+    const portalGeometries: THREE.BufferGeometry[] = [];
+    const portalMaterials: THREE.Material[] = [];
     const portalCount = 5;
-    // Spread evenly across horizontal arc
     const arcSpread = 820;
 
     for (let i = 0; i < portalCount; i++) {
       const pGroup = new THREE.Group();
-      const posX = ((i - 2) / 2) * (arcSpread / 2); // -410, -205, 0, +205, +410
-      const posZ = -Math.abs(i - 2) * 55 - 40; // slight curved depth
+      const posX = ((i - 2) / 2) * (arcSpread / 2);
+      const posZ = -Math.abs(i - 2) * 55 - 40;
       const posY = 15;
 
       pGroup.position.set(posX, posY, posZ);
 
-      // A. Outer Grand Arch Ring
+      // Outer Arch Ring
       const outerRingGeo = new THREE.TorusGeometry(85, 3.5, 20, 64);
+      portalGeometries.push(outerRingGeo);
       const outerRingMat = new THREE.MeshStandardMaterial({
         color: gatewayThemes[i].color,
         emissive: gatewayThemes[i].emissive,
@@ -139,11 +154,13 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
         roughness: 0.3,
         metalness: 0.8,
       });
+      portalMaterials.push(outerRingMat);
       const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
       pGroup.add(outerRing);
 
-      // B. Inner Glowing Portal Vortex Disc
+      // Inner Glowing Disc
       const discGeo = new THREE.CircleGeometry(80, 48);
+      portalGeometries.push(discGeo);
       const discMat = new THREE.MeshBasicMaterial({
         color: gatewayThemes[i].color,
         transparent: true,
@@ -151,11 +168,13 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending,
       });
+      portalMaterials.push(discMat);
       const disc = new THREE.Mesh(discGeo, discMat);
       pGroup.add(disc);
 
-      // C. Rotating Celestial Energy Ring
+      // Energy Ring
       const energyRingGeo = new THREE.RingGeometry(65, 72, 32);
+      portalGeometries.push(energyRingGeo);
       const energyRingMat = new THREE.MeshBasicMaterial({
         color: gatewayThemes[i].aura,
         side: THREE.DoubleSide,
@@ -163,10 +182,10 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
         opacity: 0.35,
         blending: THREE.AdditiveBlending,
       });
+      portalMaterials.push(energyRingMat);
       const energyRing = new THREE.Mesh(energyRingGeo, energyRingMat);
       pGroup.add(energyRing);
 
-      // D. Point light shining onto surroundings
       const pLight = new THREE.PointLight(gatewayThemes[i].color, 1.2, 300);
       pLight.position.set(0, 0, 30);
       pGroup.add(pLight);
@@ -175,7 +194,6 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
       portalGroups.push(pGroup);
     }
 
-    // 5. Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
@@ -183,7 +201,6 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
     centerLight.position.set(0, 200, 300);
     scene.add(centerLight);
 
-    // 6. Mouse Parallax
     let mouseX = 0;
     let mouseY = 0;
     let targetCamX = 0;
@@ -196,25 +213,30 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
     window.addEventListener('mousemove', handleMouseMove);
 
     const handleResize = () => {
+      if (!renderer) return;
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
     window.addEventListener('resize', handleResize);
 
-    // 7. Animation Loop
+    let isTabVisible = true;
+    const handleVisibilityChange = () => {
+      isTabVisible = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     let animationId: number;
     let clock = new THREE.Clock();
 
     const animate = () => {
       animationId = requestAnimationFrame(animate);
+      if (!isTabVisible || !renderer) return;
       const time = clock.getElapsedTime();
 
-      // Camera lerp
       targetCamX += (mouseX - targetCamX) * 0.05;
       targetCamY += (70 - mouseY - targetCamY) * 0.05;
 
-      // If transitioning into a specific gateway, drive camera forward into that portal
       const isReduced = reducedMotionRef.current;
       if (transitionRef.current) {
         camera.position.z += (-150 - camera.position.z) * (isReduced ? 0.03 : 0.08);
@@ -229,25 +251,22 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
         camera.lookAt(0, 20, 0);
       }
 
-      // Rotate ground disc
       mandalaGroup.rotation.y = time * (isReduced ? 0.005 : 0.02);
 
-      // Animate portals
       portalGroups.forEach((group, idx) => {
         const isHovered = activeIndexRef.current === idx;
         const targetScale = isHovered ? 1.3 : 1.0;
         group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
 
-        // Floating hover motion
-        group.position.y = 15 + Math.sin(time * 2 + idx * 1.2) * 8;
+        if (!isReduced) {
+          group.position.y = 15 + Math.sin(time * 2 + idx * 1.2) * 8;
+        }
 
-        // Inner energy ring rotation
         const energyRing = group.children[2] as THREE.Mesh;
-        if (energyRing) {
+        if (energyRing && !isReduced) {
           energyRing.rotation.z = time * (idx % 2 === 0 ? 1 : -1) * 0.8;
         }
 
-        // Disc brightness
         const disc = group.children[1] as THREE.Mesh;
         if (disc) {
           const discMat = disc.material as THREE.MeshBasicMaterial;
@@ -255,7 +274,6 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
         }
       });
 
-      // Slowly drift star field
       starPoints.rotation.y = time * 0.004;
 
       renderer.render(scene, camera);
@@ -266,13 +284,24 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cancelAnimationFrame(animationId);
-      if (container && renderer.domElement) {
-        container.removeChild(renderer.domElement);
-      }
+
+      // Disposal (F13)
       starGeometry.dispose();
       starMaterial.dispose();
-      renderer.dispose();
+      mandalaGeometries.forEach((g) => g.dispose());
+      mandalaMaterials.forEach((m) => m.dispose());
+      portalGeometries.forEach((g) => g.dispose());
+      portalMaterials.forEach((m) => m.dispose());
+
+      if (renderer) {
+        if (container && renderer.domElement && container.contains(renderer.domElement)) {
+          container.removeChild(renderer.domElement);
+        }
+        renderer.forceContextLoss();
+        renderer.dispose();
+      }
     };
   }, []);
 
