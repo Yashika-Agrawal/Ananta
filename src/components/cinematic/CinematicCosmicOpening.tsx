@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CosmicVoidCanvas } from './CosmicVoidCanvas';
 import { JourneyBackInTime } from './JourneyBackInTime';
+import { CosmicCreationExperience } from './CosmicCreationExperience';
 import { SacredBowTrigger } from './SacredBowTrigger';
 import { ScripturalDrawer } from './ScripturalDrawer';
 import { soundEngine } from '../../services/soundEngine';
@@ -15,7 +16,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
   onEnterUniverse,
   reducedMotion = false,
 }) => {
-  const [stage, setStage] = useState<'void' | 'warping' | 'awakened'>('void');
+  const [stage, setStage] = useState<'void' | 'warping' | 'arrival' | 'creation' | 'awakened'>('void');
   const [warpIntensity, setWarpIntensity] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
@@ -25,6 +26,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
 
   const awakenTimerRef = useRef<number | null>(null);
   const exitTimerRef = useRef<number | null>(null);
+  const arrivalTimerRef = useRef<number | null>(null);
 
   const narrationLines = [
     {
@@ -48,6 +50,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
       soundEngine.stopNarration();
       if (awakenTimerRef.current) clearTimeout(awakenTimerRef.current);
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
     };
   }, []);
 
@@ -61,6 +64,12 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
     setStage('warping');
     setWarpIntensity(1.0);
     soundEngine.stopNarration();
+  };
+
+  const handleTimeArrival = () => {
+    setWarpIntensity(0.05);
+    setStage('arrival');
+    arrivalTimerRef.current = window.setTimeout(() => setStage('creation'), reducedMotion ? 350 : 1500);
   };
 
   const handleToggleSound = () => {
@@ -165,7 +174,24 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
       {stage === 'warping' && (
         <JourneyBackInTime
           reducedMotion={reducedMotion}
-          onArrive={onEnterUniverse}
+          onArrive={handleTimeArrival}
+        />
+      )}
+
+      {stage === 'arrival' && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#030812]/90 text-center animate-fade-in">
+          <div>
+            <div className="mx-auto mb-7 h-16 w-16 rounded-full border border-gold-antique/40 shadow-[0_0_55px_rgba(212,175,55,.16)]" />
+            <p className="font-cinzel text-[10px] uppercase tracking-[.34em] text-gold-light/70">Before the first dawn</p>
+            <p className="mt-3 font-cormorant text-lg italic text-parchment-muted">All is still.</p>
+          </div>
+        </div>
+      )}
+
+      {stage === 'creation' && (
+        <CosmicCreationExperience
+          reducedMotion={reducedMotion}
+          onContinue={() => onEnterUniverse?.()}
         />
       )}
 

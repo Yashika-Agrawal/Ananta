@@ -116,89 +116,110 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
       mandalaMaterials.push(ringMat);
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
-      ring.position.y = -190;
+      ring.position.y = -85;
       mandalaGroup.add(ring);
     });
     scene.add(mandalaGroup);
 
-    // 4. Five Grand Cosmic 3D Gateway Portals
-    const gatewayThemes = [
-      { color: 0xf59e0b, emissive: 0xd97706, aura: 0xfef3c7 },
-      { color: 0x0ea5e9, emissive: 0x0284c7, aura: 0xe0f2fe },
-      { color: 0xa855f7, emissive: 0x9333ea, aura: 0xf3e8ff },
-      { color: 0xf97316, emissive: 0xea580c, aura: 0xffedd5 },
-      { color: 0x10b981, emissive: 0x059669, aura: 0xd1fae5 },
-    ];
-
+    // 4. A row of distinct, ancient landmarks: an atlas rather than five colored rings.
     const portalGroups: THREE.Group[] = [];
     const portalGeometries: THREE.BufferGeometry[] = [];
     const portalMaterials: THREE.Material[] = [];
+    const landmarkLights: THREE.PointLight[] = [];
     const portalCount = 5;
-    const arcSpread = 820;
+    const arcSpread = 760;
+    const stone = new THREE.MeshStandardMaterial({ color: 0x746a58, roughness: 0.92, metalness: 0.08 });
+    const darkStone = new THREE.MeshStandardMaterial({ color: 0x302c28, roughness: 0.88, metalness: 0.12 });
+    const bronze = new THREE.MeshStandardMaterial({ color: 0x9a7741, roughness: 0.48, metalness: 0.72, emissive: 0x241707, emissiveIntensity: 0.25 });
+    const page = new THREE.MeshStandardMaterial({ color: 0xb7a785, roughness: 0.96, metalness: 0.02 });
+    const crystal = new THREE.MeshStandardMaterial({ color: 0x718887, roughness: 0.28, metalness: 0.28, emissive: 0x152b2b, emissiveIntensity: 0.32, flatShading: true });
+    const bark = new THREE.MeshStandardMaterial({ color: 0x554438, roughness: 0.95, metalness: 0.02 });
+    portalMaterials.push(stone, darkStone, bronze, page, crystal, bark);
+    const addShape = (group: THREE.Group, geometry: THREE.BufferGeometry, material: THREE.Material, position: THREE.Vector3, rotation?: THREE.Euler, scale?: THREE.Vector3) => {
+      portalGeometries.push(geometry);
+      const shape = new THREE.Mesh(geometry, material);
+      shape.position.copy(position);
+      if (rotation) shape.rotation.copy(rotation);
+      if (scale) shape.scale.copy(scale);
+      shape.castShadow = true;
+      shape.receiveShadow = true;
+      group.add(shape);
+      return shape;
+    };
+    const addBranch = (group: THREE.Group, start: THREE.Vector3, end: THREE.Vector3, radius: number) => {
+      const delta = new THREE.Vector3().subVectors(end, start);
+      const geometry = new THREE.CylinderGeometry(radius * 0.72, radius, delta.length(), 7);
+      const branch = addShape(group, geometry, bark, start.clone().add(end).multiplyScalar(0.5));
+      branch.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), delta.normalize());
+    };
 
     for (let i = 0; i < portalCount; i++) {
       const pGroup = new THREE.Group();
-      const posX = ((i - 2) / 2) * (arcSpread / 2);
-      const posZ = -Math.abs(i - 2) * 55 - 40;
-      const posY = 15;
+      const posX = (i - 2) * (arcSpread / 4);
+      const posZ = -Math.abs(i - 2) * 46 - 35;
+      const posY = 95;
 
       pGroup.position.set(posX, posY, posZ);
+      const pedestal = addShape(pGroup, new THREE.CylinderGeometry(54, 65, 22, 12), stone, new THREE.Vector3(0, -157, 0));
+      pedestal.rotation.y = 0.12;
+      addShape(pGroup, new THREE.CylinderGeometry(46, 52, 8, 12), bronze, new THREE.Vector3(0, -141, 0));
 
-      // Outer Arch Ring
-      const outerRingGeo = new THREE.TorusGeometry(85, 3.5, 20, 64);
-      portalGeometries.push(outerRingGeo);
-      const outerRingMat = new THREE.MeshStandardMaterial({
-        color: gatewayThemes[i].color,
-        emissive: gatewayThemes[i].emissive,
-        emissiveIntensity: 0.8,
-        roughness: 0.3,
-        metalness: 0.8,
-      });
-      portalMaterials.push(outerRingMat);
-      const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
-      pGroup.add(outerRing);
+      if (i === 0) {
+        // Katha: a time-worn manuscript on a low reading altar.
+        addShape(pGroup, new THREE.BoxGeometry(88, 12, 68), darkStone, new THREE.Vector3(0, -127, 0), new THREE.Euler(0.08, 0, 0));
+        addShape(pGroup, new THREE.BoxGeometry(74, 4, 58), page, new THREE.Vector3(-2, -119, 0), new THREE.Euler(0.08, 0, -0.08));
+        addShape(pGroup, new THREE.BoxGeometry(74, 4, 58), page, new THREE.Vector3(2, -115, 0), new THREE.Euler(0.08, 0, 0.08));
+        for (let line = 0; line < 5; line++) addShape(pGroup, new THREE.BoxGeometry(42 - line * 3, 0.7, 1), bronze, new THREE.Vector3(-4, -112.5, -17 + line * 8));
+        addShape(pGroup, new THREE.CylinderGeometry(3, 3, 74, 8), bronze, new THREE.Vector3(0, -119, 29), new THREE.Euler(Math.PI / 2, 0, 0));
+      } else if (i === 1) {
+        // Brahmanda: a measured orrery with worlds held in tilted orbital bands.
+        addShape(pGroup, new THREE.SphereGeometry(30, 24, 18), bronze, new THREE.Vector3(0, -58, 0));
+        [[52, 0.25, 0.18], [72, 0.9, -0.48], [91, 1.25, 0.56]].forEach(([radius, rx, rz]) => {
+          addShape(pGroup, new THREE.TorusGeometry(radius, 1.7, 8, 72), bronze, new THREE.Vector3(0, -58, 0), new THREE.Euler(rx, 0.15, rz));
+        });
+        [[62, 0.6], [82, 2.6], [101, 4.4]].forEach(([radius, angle]) => {
+          addShape(pGroup, new THREE.SphereGeometry(5.5, 12, 10), page, new THREE.Vector3(Math.cos(angle) * radius, -58 + Math.sin(angle) * radius * 0.18, Math.sin(angle) * radius));
+        });
+      } else if (i === 2) {
+        // Tattva: a weathered cluster of faceted stones, not a glowing UI glyph.
+        addShape(pGroup, new THREE.IcosahedronGeometry(39, 1), crystal, new THREE.Vector3(0, -73, 0), new THREE.Euler(0.18, 0.4, 0.12));
+        addShape(pGroup, new THREE.IcosahedronGeometry(24, 0), stone, new THREE.Vector3(-39, -116, 14), new THREE.Euler(0.35, 0.2, 0.5));
+        addShape(pGroup, new THREE.IcosahedronGeometry(19, 0), darkStone, new THREE.Vector3(38, -120, -8), new THREE.Euler(0.2, 0.9, 0.3));
+        addShape(pGroup, new THREE.TorusGeometry(50, 1.2, 6, 48), bronze, new THREE.Vector3(0, -102, 0), new THREE.Euler(0.4, 0.2, 0.15));
+      } else if (i === 3) {
+        // Charitra: a branching lineage tree, its lights held like quiet stars.
+        const root = new THREE.Vector3(0, -145, 0);
+        const trunk = new THREE.Vector3(0, -42, 0);
+        addBranch(pGroup, root, trunk, 10);
+        const ends = [new THREE.Vector3(-53, -8, 4), new THREE.Vector3(47, -5, -8), new THREE.Vector3(-28, 30, -12), new THREE.Vector3(27, 39, 10), new THREE.Vector3(0, 59, 0)];
+        addBranch(pGroup, trunk, ends[0], 6); addBranch(pGroup, trunk, ends[1], 6);
+        addBranch(pGroup, new THREE.Vector3(-22, -25, 1), ends[2], 4.5); addBranch(pGroup, new THREE.Vector3(20, -23, -2), ends[3], 4.5);
+        addBranch(pGroup, new THREE.Vector3(0, -42, 0), ends[4], 5);
+        ends.forEach((point, index) => addShape(pGroup, new THREE.SphereGeometry(index === 4 ? 8 : 6, 12, 10), bronze, point));
+      } else {
+        // My Granth: an open volume resting on a small stone lectern.
+        addShape(pGroup, new THREE.BoxGeometry(9, 5, 66), darkStone, new THREE.Vector3(0, -132, 0));
+        addShape(pGroup, new THREE.BoxGeometry(48, 3, 62), page, new THREE.Vector3(-24, -127, 0), new THREE.Euler(0, 0, 0.12));
+        addShape(pGroup, new THREE.BoxGeometry(48, 3, 62), page, new THREE.Vector3(24, -127, 0), new THREE.Euler(0, 0, -0.12));
+        addShape(pGroup, new THREE.BoxGeometry(1, 1, 42), bronze, new THREE.Vector3(-26, -124.5, -3), new THREE.Euler(0, 0, 0.12));
+        addShape(pGroup, new THREE.BoxGeometry(1, 1, 42), bronze, new THREE.Vector3(26, -124.5, -3), new THREE.Euler(0, 0, -0.12));
+        addShape(pGroup, new THREE.CylinderGeometry(2, 3, 52, 8), bronze, new THREE.Vector3(55, -94, 0), new THREE.Euler(0.1, 0, 0.22));
+      }
 
-      // Inner Glowing Disc
-      const discGeo = new THREE.CircleGeometry(80, 48);
-      portalGeometries.push(discGeo);
-      const discMat = new THREE.MeshBasicMaterial({
-        color: gatewayThemes[i].color,
-        transparent: true,
-        opacity: 0.22,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-      });
-      portalMaterials.push(discMat);
-      const disc = new THREE.Mesh(discGeo, discMat);
-      pGroup.add(disc);
-
-      // Energy Ring
-      const energyRingGeo = new THREE.RingGeometry(65, 72, 32);
-      portalGeometries.push(energyRingGeo);
-      const energyRingMat = new THREE.MeshBasicMaterial({
-        color: gatewayThemes[i].aura,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.35,
-        blending: THREE.AdditiveBlending,
-      });
-      portalMaterials.push(energyRingMat);
-      const energyRing = new THREE.Mesh(energyRingGeo, energyRingMat);
-      pGroup.add(energyRing);
-
-      const pLight = new THREE.PointLight(gatewayThemes[i].color, 1.2, 300);
-      pLight.position.set(0, 0, 30);
+      const pLight = new THREE.PointLight(0xd8bd7a, 0.48, 260);
+      pLight.position.set(0, -30, 80);
       pGroup.add(pLight);
+      landmarkLights.push(pLight);
 
       scene.add(pGroup);
       portalGroups.push(pGroup);
     }
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xb9c4cf, 0.75);
     scene.add(ambientLight);
 
-    const centerLight = new THREE.PointLight(0xd4af37, 1.5, 800);
-    centerLight.position.set(0, 200, 300);
+    const centerLight = new THREE.PointLight(0xd8bd7a, 1.7, 1100);
+    centerLight.position.set(0, 145, 260);
     scene.add(centerLight);
 
     let mouseX = 0;
@@ -255,23 +276,15 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
 
       portalGroups.forEach((group, idx) => {
         const isHovered = activeIndexRef.current === idx;
-        const targetScale = isHovered ? 1.3 : 1.0;
+        const targetScale = isHovered ? 1.12 : 1.0;
         group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
 
         if (!isReduced) {
-          group.position.y = 15 + Math.sin(time * 2 + idx * 1.2) * 8;
+          group.position.y = 95 + Math.sin(time * 0.65 + idx * 1.2) * 2.5;
+          group.rotation.y = Math.sin(time * 0.22 + idx) * 0.035;
         }
-
-        const energyRing = group.children[2] as THREE.Mesh;
-        if (energyRing && !isReduced) {
-          energyRing.rotation.z = time * (idx % 2 === 0 ? 1 : -1) * 0.8;
-        }
-
-        const disc = group.children[1] as THREE.Mesh;
-        if (disc) {
-          const discMat = disc.material as THREE.MeshBasicMaterial;
-          discMat.opacity = isHovered ? 0.65 : 0.2 + Math.sin(time * 3 + idx) * 0.08;
-        }
+        const light = landmarkLights[idx];
+        light.intensity += ((isHovered ? 1.05 : 0.42) - light.intensity) * 0.08;
       });
 
       starPoints.rotation.y = time * 0.004;

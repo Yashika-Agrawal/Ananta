@@ -169,7 +169,7 @@ class SoundEngine {
     this.warpFilter.frequency.setValueAtTime(320, now);
     this.warpNoiseGain = this.ctx.createGain();
     this.warpNoiseGain.gain.setValueAtTime(0.0001, now);
-    this.warpNoiseGain.gain.setTargetAtTime(0.075, now, 0.25);
+    this.warpNoiseGain.gain.setTargetAtTime(0.022, now, 0.25);
     this.warpNoise.connect(this.warpFilter);
     this.warpFilter.connect(this.warpNoiseGain);
     this.warpNoiseGain.connect(this.masterGain);
@@ -180,7 +180,7 @@ class SoundEngine {
     this.warpOscillator.frequency.setValueAtTime(48, now);
     this.warpOscGain = this.ctx.createGain();
     this.warpOscGain.gain.setValueAtTime(0.0001, now);
-    this.warpOscGain.gain.setTargetAtTime(0.035, now, 0.35);
+    this.warpOscGain.gain.setTargetAtTime(0.008, now, 0.35);
     this.warpOscillator.connect(this.warpOscGain);
     this.warpOscGain.connect(this.masterGain);
     this.warpOscillator.start(now);
@@ -190,7 +190,7 @@ class SoundEngine {
     this.warpSub.frequency.setValueAtTime(38, now);
     this.warpSubGain = this.ctx.createGain();
     this.warpSubGain.gain.setValueAtTime(0.0001, now);
-    this.warpSubGain.gain.setTargetAtTime(0.05, now, 0.5);
+    this.warpSubGain.gain.setTargetAtTime(0.012, now, 0.5);
     this.warpSub.connect(this.warpSubGain);
     this.warpSubGain.connect(this.masterGain);
     this.warpSub.start(now);
@@ -202,9 +202,9 @@ class SoundEngine {
     const now = this.ctx.currentTime;
     this.warpFilter.frequency.setTargetAtTime(320 + v * 7_000, now, 0.12);
     this.warpOscillator.frequency.setTargetAtTime(48 + v * 260, now, 0.16);
-    this.warpNoiseGain.gain.setTargetAtTime(0.035 + v * 0.12, now, 0.18);
-    this.warpOscGain?.gain.setTargetAtTime(0.018 + v * 0.06, now, 0.2);
-    this.warpSubGain?.gain.setTargetAtTime(0.025 + v * 0.07, now, 0.24);
+    this.warpNoiseGain.gain.setTargetAtTime(0.012 + v * 0.018, now, 0.18);
+    this.warpOscGain?.gain.setTargetAtTime(0.004 + v * 0.012, now, 0.2);
+    this.warpSubGain?.gain.setTargetAtTime(0.006 + v * 0.012, now, 0.24);
   }
 
   public stopWarpSound() {

@@ -182,10 +182,7 @@ export const JourneyBackInTime: React.FC<JourneyBackInTimeProps> = ({ reducedMot
           <p className="mt-2 font-cormorant text-lg text-cyan-50/75">{yearsRemaining.toLocaleString()} years toward the beginning</p>
         </>}
       </div>
-      {progress >= 1 && <div className="absolute bottom-10 flex w-full max-w-3xl flex-col items-center gap-4 px-6">
-        <input aria-label="Scrub through the yugas" type="range" min="0" max="1" step="0.001" value={depth} onChange={(e) => { const s = stateRef.current; s.depth = Number(e.target.value); s.velocity = 0; }} className="w-full accent-[#d8bb5a]" />
-        <div className="flex w-full justify-between text-[9px] uppercase tracking-[.2em] text-cyan-50/55">{YUGAS.map((era, i) => <button key={era.id} onClick={() => { const s = stateRef.current; s.depth = i / YUGAS.length; s.velocity = 0; }} className="hover:text-gold-light">{era.name}</button>)}</div>
-      </div>}
+      {progress >= 1 && <p className="absolute bottom-9 text-[9px] uppercase tracking-[.24em] text-cyan-50/45">Scroll or swipe to travel through the ages</p>}
     </main>
     {activeMarker !== null && activeMarker > 0 && <aside className="absolute right-5 top-1/2 z-20 w-64 -translate-y-1/2 border-l border-gold-antique/40 bg-[#071523]/60 p-5 backdrop-blur-sm sm:right-10">
       <p className="mb-2 text-[9px] uppercase tracking-[.28em] text-gold-antique">Era marker · {YUGAS[activeMarker].name}</p>

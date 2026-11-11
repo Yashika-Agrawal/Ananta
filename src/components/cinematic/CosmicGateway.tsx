@@ -52,8 +52,8 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
       subtitle: 'The Sacred Story Sanctuary',
       description: 'Living chronicles of devotion, cosmic leelas, and spiritual transformations. Step into the unyielding resolve of Dhruva and the wanderings of Narada.',
       scriptureSources: 'Srimad Bhagavatam • Vishnu Purana • Ramayana',
-      colorName: 'text-amber-400',
-      icon: <BookOpen className="w-5 h-5 text-amber-400" />,
+      colorName: 'text-gold-radiant',
+      icon: <BookOpen className="w-5 h-5 text-gold-antique" />,
     },
     {
       id: 'brahmanda',
@@ -61,8 +61,8 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
       subtitle: 'Cosmic Realms & Time Cycles',
       description: 'Journey across the 14 Lokas, from Satyaloka to the primordial ocean. Contemplate the four Yugas and the eternal cycles of cosmic creation.',
       scriptureSources: '14 Lokas • Chaturyugas • Cosmic Kalpas',
-      colorName: 'text-sky-400',
-      icon: <Compass className="w-5 h-5 text-sky-400" />,
+      colorName: 'text-gold-radiant',
+      icon: <Compass className="w-5 h-5 text-gold-antique" />,
     },
     {
       id: 'tattva',
@@ -70,8 +70,8 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
       subtitle: 'Philosophy & Transcendental Truth',
       description: 'Explore foundational truths from the Upanishads and Bhagavad Gita: Atman, Brahman, Maya, and Karma, linked directly to living stories.',
       scriptureSources: 'Upanishads • Bhagavad Gita • Vedanta',
-      colorName: 'text-purple-400',
-      icon: <Sparkles className="w-5 h-5 text-purple-400" />,
+      colorName: 'text-gold-radiant',
+      icon: <Sparkles className="w-5 h-5 text-gold-antique" />,
     },
     {
       id: 'charitra',
@@ -79,8 +79,8 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
       subtitle: 'Sages, Deities & Devotees',
       description: 'Trace divine lineages, spiritual genealogies, and timeless bonds between Avatars, Rishis, and Kings in an interconnected sacred web.',
       scriptureSources: 'Devas • Sages • Kings • Devotees',
-      colorName: 'text-orange-400',
-      icon: <Users className="w-5 h-5 text-orange-400" />,
+      colorName: 'text-gold-radiant',
+      icon: <Users className="w-5 h-5 text-gold-antique" />,
     },
     {
       id: 'granth',
@@ -88,8 +88,8 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
       subtitle: 'Personal Knowledge Sanctuary',
       description: 'Your personal digital notebook for scripture notes, reflections, bookmarks, and realizations as you journey through the texts.',
       scriptureSources: 'Personal Journal • Bookmarks • Notes',
-      colorName: 'text-emerald-400',
-      icon: <Library className="w-5 h-5 text-emerald-400" />,
+      colorName: 'text-gold-radiant',
+      icon: <Library className="w-5 h-5 text-gold-antique" />,
     },
   ];
 
@@ -158,7 +158,7 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
       <div className="relative z-20 text-center pt-1 pointer-events-none">
         <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full border border-gold-antique/30 bg-cosmos-surface/80 text-[10px] font-sans tracking-[0.3em] text-gold-light uppercase">
           <Sparkle className="w-3 h-3 text-gold-antique" />
-          <span>The Five Cosmic Portals</span>
+          <span>A Living Atlas of Ananta</span>
         </span>
         <h1 className="text-2xl sm:text-4xl font-cinzel font-black tracking-[0.2em] text-sacred-gold mt-1.5 drop-shadow-[0_2px_15px_rgba(0,0,0,0.8)]">
           SELECT YOUR REALM
