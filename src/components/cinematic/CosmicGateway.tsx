@@ -29,11 +29,13 @@ interface Gateway {
 interface CosmicGatewayProps {
   onSelectGateway: (id: GatewayId) => void;
   onReturnToPrologue: () => void;
+  reducedMotion?: boolean;
 }
 
 export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
   onSelectGateway,
   onReturnToPrologue,
+  reducedMotion = false,
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(0); // Default to Katha
   const [transitioningTo, setTransitioningTo] = useState<GatewayId | null>(null);
@@ -114,6 +116,7 @@ export const CosmicGateway: React.FC<CosmicGatewayProps> = ({
       <CosmicGatewayCanvas
         activeGatewayIndex={hoveredIndex}
         transitioningTo={transitioningTo}
+        reducedMotion={reducedMotion}
       />
 
       {/* 2. Top Minimalist Controls */}

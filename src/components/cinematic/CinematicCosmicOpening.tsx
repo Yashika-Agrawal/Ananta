@@ -7,10 +7,12 @@ import { Volume2, VolumeX, Sparkles, BookOpen, RotateCcw, ArrowRight } from 'luc
 
 interface CinematicCosmicOpeningProps {
   onEnterUniverse?: () => void;
+  reducedMotion?: boolean;
 }
 
 export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
   onEnterUniverse,
+  reducedMotion = false,
 }) => {
   const [stage, setStage] = useState<'void' | 'warping' | 'awakened'>('void');
   const [warpIntensity, setWarpIntensity] = useState<number>(0);
@@ -104,7 +106,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
     <div className={`relative w-screen h-dvh overflow-hidden bg-cosmos-void text-parchment select-none transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
       
       {/* 1. Deep 3D Three.js Star Tunnel & Warp Canvas */}
-      <CosmicVoidCanvas warpIntensity={warpIntensity} />
+      <CosmicVoidCanvas warpIntensity={warpIntensity} reducedMotion={reducedMotion} />
 
       {/* 2. Top Minimalist Controls Bar */}
       <header className="relative z-30 flex items-center justify-between p-6 sm:p-8">

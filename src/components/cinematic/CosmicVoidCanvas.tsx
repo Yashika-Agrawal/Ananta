@@ -3,20 +3,26 @@ import * as THREE from 'three';
 
 interface CosmicVoidCanvasProps {
   warpIntensity: number; // 0.0 = calm cosmic ocean, 1.0 = warp hyperspace
-  targetEra?: 'pralaya' | 'satya' | 'madhuvana';
+  reducedMotion?: boolean;
   className?: string;
 }
 
 export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
   warpIntensity,
+  reducedMotion = false,
   className = '',
 }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const warpRef = useRef(warpIntensity);
+  const reducedMotionRef = useRef(reducedMotion);
 
   useEffect(() => {
     warpRef.current = warpIntensity;
   }, [warpIntensity]);
+
+  useEffect(() => {
+    reducedMotionRef.current = reducedMotion;
+  }, [reducedMotion]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -162,7 +168,10 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
       // Continuous, smooth star speed:
       // at warp 0 => 48 units/sec (~0.8 at 60fps)
       // at warp 1 => 48 + 11652 = 11,700 units/sec (~195 at 60fps)
-      const speedPerSecond = 48 + Math.pow(smoothedWarp, 1.8) * 11652;
+      const isReduced = reducedMotionRef.current;
+      const speedPerSecond = isReduced
+        ? 24 + smoothedWarp * 50 // Gentle cap for reduced motion
+        : 48 + Math.pow(smoothedWarp, 1.8) * 11652;
       const stepSpeed = speedPerSecond * delta;
 
       const positions = starGeometry.attributes.position.array as Float32Array;
@@ -177,11 +186,11 @@ export const CosmicVoidCanvas: React.FC<CosmicVoidCanvasProps> = ({
       }
       starGeometry.attributes.position.needsUpdate = true;
 
-      // Delta-scaled ring rotation
-      ringGroup.rotation.z += (0.09 + smoothedWarp * 1.2) * delta;
+      // Delta-scaled ring rotation (disabled or very subtle in reduced motion)
+      ringGroup.rotation.z += (isReduced ? 0.02 : 0.09 + smoothedWarp * 1.2) * delta;
 
-      // Camera FOV smoothly driven by smoothed warp (no instant snapping)
-      camera.fov = 60 + smoothedWarp * 35;
+      // Camera FOV smoothly driven by smoothed warp (no FOV change in reduced motion)
+      camera.fov = isReduced ? 60 : 60 + smoothedWarp * 35;
       camera.updateProjectionMatrix();
 
       renderer.render(scene, camera);

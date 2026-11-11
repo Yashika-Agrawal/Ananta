@@ -4,15 +4,18 @@ import * as THREE from 'three';
 interface CosmicGatewayCanvasProps {
   activeGatewayIndex: number | null;
   transitioningTo: string | null;
+  reducedMotion?: boolean;
 }
 
 export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
   activeGatewayIndex,
   transitioningTo,
+  reducedMotion = false,
 }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const activeIndexRef = useRef<number | null>(activeGatewayIndex);
   const transitionRef = useRef<string | null>(transitioningTo);
+  const reducedMotionRef = useRef<boolean>(reducedMotion);
 
   useEffect(() => {
     activeIndexRef.current = activeGatewayIndex;
@@ -21,6 +24,10 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
   useEffect(() => {
     transitionRef.current = transitioningTo;
   }, [transitioningTo]);
+
+  useEffect(() => {
+    reducedMotionRef.current = reducedMotion;
+  }, [reducedMotion]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -207,19 +214,23 @@ export const CosmicGatewayCanvas: React.FC<CosmicGatewayCanvasProps> = ({
       targetCamX += (mouseX - targetCamX) * 0.05;
       targetCamY += (70 - mouseY - targetCamY) * 0.05;
 
+      // If transitioning into a specific gateway, drive camera forward into that portal
+      const isReduced = reducedMotionRef.current;
       if (transitionRef.current) {
-        camera.position.z += (-150 - camera.position.z) * 0.08;
-        camera.fov = Math.min(105, camera.fov + 0.6);
-        camera.updateProjectionMatrix();
+        camera.position.z += (-150 - camera.position.z) * (isReduced ? 0.03 : 0.08);
+        if (!isReduced) {
+          camera.fov = Math.min(105, camera.fov + 0.6);
+          camera.updateProjectionMatrix();
+        }
       } else {
-        camera.position.x = targetCamX * 0.5;
-        camera.position.y = targetCamY;
+        camera.position.x = isReduced ? 0 : targetCamX * 0.5;
+        camera.position.y = isReduced ? 70 : targetCamY;
         camera.position.z = 620;
         camera.lookAt(0, 20, 0);
       }
 
       // Rotate ground disc
-      mandalaGroup.rotation.y = time * 0.02;
+      mandalaGroup.rotation.y = time * (isReduced ? 0.005 : 0.02);
 
       // Animate portals
       portalGroups.forEach((group, idx) => {

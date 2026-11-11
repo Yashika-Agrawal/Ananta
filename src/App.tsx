@@ -8,6 +8,11 @@ import { HomeView } from './views/HomeView';
 import { PlaceholderView } from './views/PlaceholderView';
 
 export const App: React.FC = () => {
+  // Check OS reduced motion preference initially
+  const [reducedMotion, setReducedMotion] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+
   // Experience Modes:
   // 1. 'cinematic-prologue' (The full-screen opening chord and cosmic awakening)
   // 2. 'cosmic-gateway'   (The interactive 3D gateway arc with 5 portals)
@@ -17,7 +22,6 @@ export const App: React.FC = () => {
   >('cinematic-prologue');
 
   const [activeSection, setActiveSection] = useState<ActiveSection>('home');
-  const [reducedMotion, setReducedMotion] = useState<boolean>(false);
 
   const handleNavigate = (section: ActiveSection) => {
     setActiveSection(section);
@@ -41,6 +45,7 @@ export const App: React.FC = () => {
   if (experienceMode === 'cinematic-prologue') {
     return (
       <CinematicCosmicOpening
+        reducedMotion={reducedMotion}
         onEnterUniverse={() => setExperienceMode('cosmic-gateway')}
       />
     );
@@ -50,6 +55,7 @@ export const App: React.FC = () => {
   if (experienceMode === 'cosmic-gateway') {
     return (
       <CosmicGateway
+        reducedMotion={reducedMotion}
         onSelectGateway={handleSelectGateway}
         onReturnToPrologue={() => setExperienceMode('cinematic-prologue')}
       />
