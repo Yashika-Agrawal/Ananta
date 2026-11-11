@@ -7,6 +7,8 @@ import { Footer } from './components/common/Footer';
 import { HomeView } from './views/HomeView';
 import { PlaceholderView } from './views/PlaceholderView';
 import { WebGLErrorBoundary } from './components/common/WebGLErrorBoundary';
+import { TempleEntryExperience } from './components/cinematic/TempleEntryExperience';
+import { SagaraYatra } from './components/cinematic/SagaraYatra';
 
 export const App: React.FC = () => {
   // Check OS reduced motion preference initially
@@ -16,10 +18,11 @@ export const App: React.FC = () => {
 
   // Experience Modes:
   // 1. 'cinematic-prologue' (The full-screen opening chord and cosmic awakening)
-  // 2. 'cosmic-gateway'   (The interactive 3D gateway arc with 5 portals)
-  // 3. 'section-view'      (When entering Katha, Brahmanda, Tattva, Charitra, or Granth)
+  // 2. 'temple-entry'     (Arrival at the sanctuary after the creation sequence)
+  // 3. 'cosmic-gateway'   (The realm atlas)
+  // 4. 'section-view'      (When entering Katha, Brahmanda, Tattva, Charitra, or Granth)
   const [experienceMode, setExperienceMode] = useState<
-    'cinematic-prologue' | 'cosmic-gateway' | 'section-view'
+    'cinematic-prologue' | 'temple-entry' | 'cosmic-gateway' | 'section-view' | 'sagara-yatra'
   >('cinematic-prologue');
 
   const [activeSection, setActiveSection] = useState<ActiveSection>('home');
@@ -48,7 +51,18 @@ export const App: React.FC = () => {
       <WebGLErrorBoundary>
         <CinematicCosmicOpening
           reducedMotion={reducedMotion}
-          onEnterUniverse={() => setExperienceMode('cosmic-gateway')}
+          onEnterUniverse={() => setExperienceMode('temple-entry')}
+        />
+      </WebGLErrorBoundary>
+    );
+  }
+
+  if (experienceMode === 'temple-entry') {
+    return (
+      <WebGLErrorBoundary>
+        <TempleEntryExperience
+          onEnter={() => setExperienceMode('cosmic-gateway')}
+          onReplayJourney={() => setExperienceMode('cinematic-prologue')}
         />
       </WebGLErrorBoundary>
     );
@@ -62,6 +76,17 @@ export const App: React.FC = () => {
           reducedMotion={reducedMotion}
           onSelectGateway={handleSelectGateway}
           onReturnToPrologue={() => setExperienceMode('cinematic-prologue')}
+        />
+      </WebGLErrorBoundary>
+    );
+  }
+
+  if (experienceMode === 'sagara-yatra') {
+    return (
+      <WebGLErrorBoundary>
+        <SagaraYatra
+          reducedMotion={reducedMotion}
+          onReturn={() => setExperienceMode('section-view')}
         />
       </WebGLErrorBoundary>
     );
@@ -126,6 +151,10 @@ export const App: React.FC = () => {
             tagline="The 14 Lokas, Mahapralaya, and the cycles of cosmic time."
             description="Interactive exploration of the upper realms (Satyaloka to Bhuvarloka) and lower realms, yuga cycles, and creation."
             onBackToHome={() => setExperienceMode('cosmic-gateway')}
+            actionButton={{
+              label: 'Begin Sagara Yatra',
+              onClick: () => setExperienceMode('sagara-yatra'),
+            }}
           />
         )}
 

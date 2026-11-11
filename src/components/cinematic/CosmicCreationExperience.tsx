@@ -229,7 +229,7 @@ export const CosmicCreationExperience: React.FC<CosmicCreationExperienceProps> =
       <p className="mb-3 max-w-lg px-6 font-cormorant text-lg italic text-parchment/80 transition-opacity duration-700 sm:text-xl" aria-live="polite">{line}</p>
       <p className="mb-5 text-[9px] uppercase tracking-[.24em] text-cyan-50/40">{dragging ? 'Turn the cosmos' : 'Drag to look around · Scroll to move closer'}</p>
       <button onClick={() => { setLeaving(true); window.setTimeout(onContinue, reducedMotion ? 0 : 700); }} disabled={!ready} className={`pointer-events-auto border border-gold-antique/50 px-7 py-3 font-cinzel text-[10px] uppercase tracking-[.24em] text-gold-light transition-all duration-700 hover:border-gold-radiant hover:bg-gold-antique/10 disabled:translate-y-2 disabled:opacity-0 ${ready ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}>
-        Explore the realms <span aria-hidden="true" className="ml-2">→</span>
+        Approach the temple <span aria-hidden="true" className="ml-2">→</span>
       </button>
     </div>
   </section>;

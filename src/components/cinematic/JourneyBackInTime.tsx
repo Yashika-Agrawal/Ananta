@@ -14,12 +14,11 @@ const eraIndexAt = (depth: number) => Math.min(YUGAS.length - 1, Math.floor(dept
 
 export const JourneyBackInTime: React.FC<JourneyBackInTimeProps> = ({ reducedMotion = false, onSelectStory, onArrive }) => {
   const hostRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0);
   const [depth, setDepth] = useState(0);
   const [webglAvailable, setWebglAvailable] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
   const [isMuted, setIsMuted] = useState(() => soundEngine.getMuted());
-  const stateRef = useRef({ holding: false, progress: 0, depth: 0, speed: 0, velocity: 0, lastEra: 0, arrived: false });
+  const stateRef = useRef({ holding: false, depth: 0, speed: 0, lastEra: 0, arrived: false });
   const reducedRef = useRef(reducedMotion);
 
   useEffect(() => { reducedRef.current = reducedMotion; }, [reducedMotion]);
@@ -92,30 +91,28 @@ export const JourneyBackInTime: React.FC<JourneyBackInTimeProps> = ({ reducedMot
       previous = now;
       elapsed += dt;
       const s = stateRef.current;
-      if (s.holding && s.progress < 1) s.progress = Math.min(1, s.progress + dt / (reducedRef.current ? 1.5 : 3.2));
-      const targetSpeed = s.holding && s.progress < 1 ? .16 + s.progress * .84 : 0;
-      s.speed += (targetSpeed - s.speed) * (1 - Math.exp(-dt * (s.holding ? 1.4 : 2.5)));
-      s.depth = clamp01(s.depth + s.velocity * dt);
-      s.velocity *= Math.exp(-dt * 3.2);
+      const maxDepthSpeed = reducedRef.current ? 0.4 : 0.14;
+      const targetSpeed = s.holding && !s.arrived ? maxDepthSpeed : 0;
+      s.speed += (targetSpeed - s.speed) * (1 - Math.exp(-dt * (s.holding ? 2.8 : 3.8)));
+      s.depth = clamp01(s.depth + s.speed * dt);
       const currentEra = eraIndexAt(s.depth);
       if (currentEra !== s.lastEra) {
         s.lastEra = currentEra;
         setSelectedMarker(currentEra);
         soundEngine.setWarpSpeed(0.12 + (currentEra / (YUGAS.length - 1)) * 0.72);
       }
-      if (s.holding && now - lastUi > 80) soundEngine.setWarpSpeed(s.speed);
-      if (s.progress >= 1 && s.holding) s.holding = false;
+      if (s.holding && now - lastUi > 80) soundEngine.setWarpSpeed(Math.min(1, s.speed / maxDepthSpeed));
       if (s.depth >= 1 && !s.arrived) { s.arrived = true; soundEngine.stopWarpSound(); onArrive?.(); }
       const boundaryDistance = Math.abs(s.depth * YUGAS.length - Math.round(s.depth * YUGAS.length));
-      const zoneSpeed = Math.max(s.speed, Math.min(1, Math.abs(s.velocity) * 1.8)) * (1 - .45 * Math.exp(-boundaryDistance * 35));
+      const zoneSpeed = Math.min(1, s.speed / maxDepthSpeed) * (1 - .45 * Math.exp(-boundaryDistance * 35));
       backgroundMaterial.uniforms.uTime.value = elapsed;
       backgroundMaterial.uniforms.uSpeed.value = zoneSpeed;
       backgroundMaterial.uniforms.uTint.value.set(YUGAS[currentEra].tint);
-      starMaterial.uniforms.uTravel.value = elapsed * .8 + s.progress * 2;
+      starMaterial.uniforms.uTravel.value = elapsed * .8 + s.depth * 2;
       starMaterial.uniforms.uSpeed.value = reducedRef.current ? 0 : zoneSpeed;
       starMaterial.uniforms.uTime.value = elapsed;
       starMaterial.uniforms.uColor.value.set(currentEra < 2 ? '#a8d9ee' : '#d6e8dc');
-      if (now - lastUi > 90) { setProgress(s.progress); setDepth(s.depth); lastUi = now; }
+      if (now - lastUi > 90) { setDepth(s.depth); lastUi = now; }
       renderer.render(scene, camera);
     };
     window.addEventListener('resize', resize);
@@ -134,7 +131,7 @@ export const JourneyBackInTime: React.FC<JourneyBackInTimeProps> = ({ reducedMot
 
   const beginHold = useCallback(() => {
     const s = stateRef.current;
-    if (s.progress >= 1) return;
+    if (s.arrived) return;
     s.holding = true;
     soundEngine.startWarpSound();
   }, []);
@@ -147,18 +144,15 @@ export const JourneyBackInTime: React.FC<JourneyBackInTimeProps> = ({ reducedMot
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
-      if (event.key === ' ' && depth === 0 && progress < 1) { event.preventDefault(); if (event.repeat) return; beginHold(); }
-      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') { event.preventDefault(); stateRef.current.velocity += 0.22; }
-      if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') { event.preventDefault(); stateRef.current.velocity -= 0.22; }
+      if (event.key === ' ') { event.preventDefault(); if (event.repeat) return; beginHold(); }
     };
     const up = (event: KeyboardEvent) => { if (event.key === ' ') endHold(); };
     window.addEventListener('keydown', key); window.addEventListener('keyup', up);
     return () => { window.removeEventListener('keydown', key); window.removeEventListener('keyup', up); };
-  }, [beginHold, endHold, depth, progress]);
+  }, [beginHold, endHold]);
 
   const current = YUGAS[eraIndexAt(depth)];
   const yearsRemaining = Math.max(0, Math.round(TOTAL_YUGA_YEARS * (1 - depth)));
-  const scrub = (delta: number) => { if (stateRef.current.progress < 1) return; stateRef.current.velocity += delta; };
   const activeMarker = selectedMarker ?? (depth > 0 ? eraIndexAt(depth) : null);
 
   return <section className="fixed inset-0 z-40 overflow-hidden bg-[#06111d] text-parchment" aria-label="Journey Back in Time">
@@ -169,20 +163,18 @@ export const JourneyBackInTime: React.FC<JourneyBackInTimeProps> = ({ reducedMot
       <div className="font-cinzel text-xs tracking-[.3em] text-gold-radiant">ANANTA <span className="text-parchment-muted tracking-[.12em]">/ JOURNEY BACK IN TIME</span></div>
       <button onClick={() => { const muted = soundEngine.toggleMute(); setIsMuted(!muted); }} className="border border-gold-antique/40 px-3 py-1.5 text-[10px] uppercase tracking-widest text-gold-light" aria-label={isMuted ? 'Unmute sound' : 'Mute sound'}>{isMuted ? 'Sound off' : 'Sound on'}</button>
     </header>
-    <main className="absolute inset-0 z-10 flex flex-col items-center justify-center px-5 text-center" onWheel={(e) => scrub(e.deltaY * 0.00045)} onTouchStart={(e) => { (e.currentTarget as HTMLElement).dataset.touchY = String(e.touches[0].clientY); }} onTouchMove={(e) => { const el = e.currentTarget as HTMLElement; const last = Number(el.dataset.touchY || e.touches[0].clientY); const y = e.touches[0].clientY; scrub((last - y) * 0.002); el.dataset.touchY = String(y); }}>
-      <p className="mb-8 text-[10px] uppercase tracking-[.38em] text-cyan-100/55">A passage through the ages</p>
-      <button className="group relative flex h-44 w-44 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-radiant" onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); beginHold(); }} onPointerUp={endHold} onPointerCancel={endHold} onPointerLeave={endHold} aria-label="Press and hold to travel through time" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
-        <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 176 176" aria-hidden="true"><circle cx="88" cy="88" r="80" fill="none" stroke="rgba(212,175,55,.2)" strokeWidth="1"/><circle cx="88" cy="88" r="80" fill="none" stroke="#e6c65a" strokeWidth="2" strokeDasharray={`${progress * 503} 503`} className="transition-[stroke-dasharray] duration-100"/></svg>
+    <main className="absolute inset-0 z-10 flex flex-col items-center justify-center px-5 text-center">
+      <p className="mb-8 text-[10px] uppercase tracking-[.38em] text-cyan-100/55">Hold to return to the beginning</p>
+      <button className="group relative flex h-44 w-44 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-radiant" onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); beginHold(); }} onPointerUp={endHold} onPointerCancel={endHold} aria-label="Press and hold to travel backward through time" aria-valuenow={Math.round(depth * 100)} aria-valuemin={0} aria-valuemax={100}>
+        <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 176 176" aria-hidden="true"><circle cx="88" cy="88" r="80" fill="none" stroke="rgba(212,175,55,.2)" strokeWidth="1"/><circle cx="88" cy="88" r="80" fill="none" stroke="#e6c65a" strokeWidth="2" strokeDasharray={`${depth * 503} 503`} className="transition-[stroke-dasharray] duration-100"/></svg>
         <span className="h-28 w-28 rounded-full border border-gold-antique/75 shadow-[0_0_32px_rgba(212,175,55,.18)] transition-shadow group-active:shadow-[0_0_52px_rgba(212,175,55,.38)]" />
-        <span className="absolute font-cormorant italic text-sm text-gold-light">{progress >= 1 ? 'Journey open' : 'Hold to travel'}</span>
+        <span className="absolute font-cormorant italic text-sm text-gold-light">{depth >= 1 ? 'At the beginning' : stateRef.current.holding ? 'Journeying…' : depth > 0 ? 'Hold to continue' : 'Hold to travel'}</span>
       </button>
       <div className="mt-7 h-12" aria-live="polite">
-        {progress < 1 ? <p className="text-xs tracking-widest text-parchment-muted">{Math.round(progress * 100)}% · Hold the ring or press Space</p> : <>
-          <h1 className="font-cinzel text-xl tracking-[.2em] text-gold-radiant">{current.name}</h1>
-          <p className="mt-2 font-cormorant text-lg text-cyan-50/75">{yearsRemaining.toLocaleString()} years toward the beginning</p>
-        </>}
+        <h1 className="font-cinzel text-xl tracking-[.2em] text-gold-radiant">{current.name}</h1>
+        <p className="mt-2 font-cormorant text-lg text-cyan-50/75">{yearsRemaining.toLocaleString()} years toward the beginning</p>
       </div>
-      {progress >= 1 && <p className="absolute bottom-9 text-[9px] uppercase tracking-[.24em] text-cyan-50/45">Scroll or swipe to travel through the ages</p>}
+      <p className="absolute bottom-9 text-[9px] uppercase tracking-[.24em] text-cyan-50/45">Hold the ring · release to slow and pause · press Space to continue</p>
     </main>
     {activeMarker !== null && activeMarker > 0 && <aside className="absolute right-5 top-1/2 z-20 w-64 -translate-y-1/2 border-l border-gold-antique/40 bg-[#071523]/60 p-5 backdrop-blur-sm sm:right-10">
       <p className="mb-2 text-[9px] uppercase tracking-[.28em] text-gold-antique">Era marker · {YUGAS[activeMarker].name}</p>
