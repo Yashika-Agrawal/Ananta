@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CosmicVoidCanvas } from './CosmicVoidCanvas';
+import { JourneyBackInTime } from './JourneyBackInTime';
 import { SacredBowTrigger } from './SacredBowTrigger';
 import { ScripturalDrawer } from './ScripturalDrawer';
 import { soundEngine } from '../../services/soundEngine';
@@ -59,15 +60,7 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
   const handleAwaken = () => {
     setStage('warping');
     setWarpIntensity(1.0);
-
-    soundEngine.speakNarration(narrationLines[0].text);
-
-    if (awakenTimerRef.current) clearTimeout(awakenTimerRef.current);
-    awakenTimerRef.current = window.setTimeout(() => {
-      setStage('awakened');
-      // Calm target: 0.05 gives a serene, slow starlight drift
-      setWarpIntensity(0.05);
-    }, 2400);
+    soundEngine.stopNarration();
   };
 
   const handleToggleSound = () => {
@@ -170,12 +163,10 @@ export const CinematicCosmicOpening: React.FC<CinematicCosmicOpeningProps> = ({
 
       {/* 4. Stage 2: Hyperspace Warp Transition Overlay */}
       {stage === 'warping' && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none animate-fade-in">
-          <div className="w-48 h-48 rounded-full bg-gold-radiant/20 blur-3xl animate-ping" />
-          <span className="font-cinzel text-lg sm:text-2xl text-sacred-gold tracking-[0.4em] uppercase animate-pulse">
-            Crossing Time...
-          </span>
-        </div>
+        <JourneyBackInTime
+          reducedMotion={reducedMotion}
+          onArrive={onEnterUniverse}
+        />
       )}
 
       {/* 5. Stage 3: The Awakened Cosmic Narrative Experience */}

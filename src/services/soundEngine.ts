@@ -13,6 +13,13 @@ class SoundEngine {
   private ambientNoiseGain: GainNode | null = null;
   private ambientNoiseSource: AudioBufferSourceNode | null = null;
   private listeners: Set<(muted: boolean) => void> = new Set();
+  private warpNoise: AudioBufferSourceNode | null = null;
+  private warpFilter: BiquadFilterNode | null = null;
+  private warpNoiseGain: GainNode | null = null;
+  private warpOscillator: OscillatorNode | null = null;
+  private warpOscGain: GainNode | null = null;
+  private warpSub: OscillatorNode | null = null;
+  private warpSubGain: GainNode | null = null;
 
   private initContext() {
     if (!this.ctx) {
@@ -141,6 +148,85 @@ class SoundEngine {
     // Modulate soft breath volume smoothly without any beeps
     const targetGain = 0.15 + tension * 0.25;
     this.ambientNoiseGain.gain.setTargetAtTime(targetGain, now, 0.08);
+  }
+
+  /** Procedural warp bed, routed through the shared master gain and AudioContext. */
+  public startWarpSound() {
+    if (this.warpNoise || typeof window === 'undefined') return;
+    this.initContext();
+    if (!this.ctx || !this.masterGain) return;
+    const now = this.ctx.currentTime;
+    const length = this.ctx.sampleRate * 2;
+    const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+
+    this.warpNoise = this.ctx.createBufferSource();
+    this.warpNoise.buffer = buffer;
+    this.warpNoise.loop = true;
+    this.warpFilter = this.ctx.createBiquadFilter();
+    this.warpFilter.type = 'lowpass';
+    this.warpFilter.frequency.setValueAtTime(320, now);
+    this.warpNoiseGain = this.ctx.createGain();
+    this.warpNoiseGain.gain.setValueAtTime(0.0001, now);
+    this.warpNoiseGain.gain.setTargetAtTime(0.075, now, 0.25);
+    this.warpNoise.connect(this.warpFilter);
+    this.warpFilter.connect(this.warpNoiseGain);
+    this.warpNoiseGain.connect(this.masterGain);
+    this.warpNoise.start(now);
+
+    this.warpOscillator = this.ctx.createOscillator();
+    this.warpOscillator.type = 'sine';
+    this.warpOscillator.frequency.setValueAtTime(48, now);
+    this.warpOscGain = this.ctx.createGain();
+    this.warpOscGain.gain.setValueAtTime(0.0001, now);
+    this.warpOscGain.gain.setTargetAtTime(0.035, now, 0.35);
+    this.warpOscillator.connect(this.warpOscGain);
+    this.warpOscGain.connect(this.masterGain);
+    this.warpOscillator.start(now);
+
+    this.warpSub = this.ctx.createOscillator();
+    this.warpSub.type = 'sine';
+    this.warpSub.frequency.setValueAtTime(38, now);
+    this.warpSubGain = this.ctx.createGain();
+    this.warpSubGain.gain.setValueAtTime(0.0001, now);
+    this.warpSubGain.gain.setTargetAtTime(0.05, now, 0.5);
+    this.warpSub.connect(this.warpSubGain);
+    this.warpSubGain.connect(this.masterGain);
+    this.warpSub.start(now);
+  }
+
+  public setWarpSpeed(value: number) {
+    if (!this.ctx || !this.warpFilter || !this.warpOscillator || !this.warpNoiseGain) return;
+    const v = Math.max(0, Math.min(1, value));
+    const now = this.ctx.currentTime;
+    this.warpFilter.frequency.setTargetAtTime(320 + v * 7_000, now, 0.12);
+    this.warpOscillator.frequency.setTargetAtTime(48 + v * 260, now, 0.16);
+    this.warpNoiseGain.gain.setTargetAtTime(0.035 + v * 0.12, now, 0.18);
+    this.warpOscGain?.gain.setTargetAtTime(0.018 + v * 0.06, now, 0.2);
+    this.warpSubGain?.gain.setTargetAtTime(0.025 + v * 0.07, now, 0.24);
+  }
+
+  public stopWarpSound() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.warpNoiseGain?.gain.setTargetAtTime(0.0001, now, 0.2);
+    this.warpOscGain?.gain.setTargetAtTime(0.0001, now, 0.2);
+    this.warpSubGain?.gain.setTargetAtTime(0.0001, now, 0.2);
+    const noise = this.warpNoise;
+    const osc = this.warpOscillator;
+    const sub = this.warpSub;
+    const filter = this.warpFilter;
+    const noiseGain = this.warpNoiseGain;
+    const oscGain = this.warpOscGain;
+    const subGain = this.warpSubGain;
+    this.warpNoise = null; this.warpFilter = null; this.warpNoiseGain = null;
+    this.warpOscillator = null; this.warpOscGain = null; this.warpSub = null; this.warpSubGain = null;
+    window.setTimeout(() => {
+      try { noise?.stop(); osc?.stop(); sub?.stop(); } catch { /* already stopped */ }
+      noise?.disconnect(); filter?.disconnect(); noiseGain?.disconnect();
+      osc?.disconnect(); oscGain?.disconnect(); sub?.disconnect(); subGain?.disconnect();
+    }, 900);
   }
 
   /**
