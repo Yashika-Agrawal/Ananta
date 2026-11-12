@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { CinematicCosmicOpening } from './components/cinematic/CinematicCosmicOpening';
 import { CosmicGateway, GatewayId } from './components/cinematic/CosmicGateway';
 import { StarFieldCanvas } from './components/common/StarFieldCanvas';
@@ -8,7 +8,8 @@ import { HomeView } from './views/HomeView';
 import { PlaceholderView } from './views/PlaceholderView';
 import { WebGLErrorBoundary } from './components/common/WebGLErrorBoundary';
 import { TempleEntryExperience } from './components/cinematic/TempleEntryExperience';
-import { SagaraYatra } from './components/cinematic/SagaraYatra';
+
+const SagaraYatra = lazy(() => import('./components/cinematic/SagaraYatra').then((module) => ({ default: module.SagaraYatra })));
 
 export const App: React.FC = () => {
   // Check OS reduced motion preference initially
@@ -84,10 +85,12 @@ export const App: React.FC = () => {
   if (experienceMode === 'sagara-yatra') {
     return (
       <WebGLErrorBoundary>
-        <SagaraYatra
-          reducedMotion={reducedMotion}
-          onReturn={() => setExperienceMode('section-view')}
-        />
+        <Suspense fallback={<div className="fixed inset-0 z-[100] bg-[#071326]" aria-label="Preparing Sagara Yatra" />}>
+          <SagaraYatra
+            reducedMotion={reducedMotion}
+            onReturn={() => setExperienceMode('section-view')}
+          />
+        </Suspense>
       </WebGLErrorBoundary>
     );
   }
